@@ -8,7 +8,7 @@ image_path = 'image.png'
 # 尝试加载图像
 original_image = cv2.imread(image_path)
 if original_image is None:
-    raise ValueError(f"无法加载图像，请检查路径：{image_path}")
+    raise ValueError(f"Cannot load image, please check the path: {image_path}")
 
 original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
 
@@ -44,19 +44,21 @@ def apply_median_filter(image, kernel_size):
     filtered = cv2.medianBlur(image, kernel_size)
     return filtered
 
-# 显示放大图像对比细节
-def show_zoomed_images(images, titles, zoom_factor=2, region=(100, 100)):
+# 保存放大图像对比细节并保存
+def save_comparison_images(images, titles, zoom_factor=2, region=(100, 100), output_file = ""):
     assert len(images) == len(titles)
     x, y = region
     w, h = 100 // zoom_factor, 100 // zoom_factor
     
-    fig, axes = plt.subplots(1, len(images), figsize=(15, 5))
+    fig, axes = plt.subplots(1, len(images), figsize=(20, 10))
     for ax, img, title in zip(axes, images, titles):
-        ax.imshow(img[y:y+h, x:x+w])
-        ax.set_title(title)
+        zoomed_img = img[y:y+h, x:x+w]
+        ax.imshow(zoomed_img)
+        ax.set_title(title, fontsize=12)
         ax.axis('off')
     plt.tight_layout()
-    plt.show()
+    plt.savefig(output_file, bbox_inches='tight')
+    plt.close()
 
 # 添加噪声
 noisy_image_gaussian = add_gaussian_noise(original_image)
@@ -65,16 +67,26 @@ noisy_image_salt_pepper = add_salt_pepper_noise(original_image)
 # 定义不同大小的模板尺寸
 kernel_sizes = [3, 5, 7]
 
-# 处理图像并显示结果
-for noise_image, noise_title in zip([noisy_image_gaussian, noisy_image_salt_pepper], ["Gaussian", "Salt & Pepper"]):
-    images = [noise_image]
-    titles = [f"Noisy Image ({noise_title})"]
-    
-    for kernel_size in kernel_sizes:
-        filtered_image_mean = apply_mean_filter(noise_image, kernel_size)
-        filtered_image_median = apply_median_filter(noise_image, kernel_size)
-        images.extend([filtered_image_mean, filtered_image_median])
-        titles.extend([f"Mean Filter {kernel_size}x{kernel_size}", f"Median Filter {kernel_size}x{kernel_size}"])
-    
-    # 放大对比细节
-    show_zoomed_images(images, titles, zoom_factor=2, region=(300, 300))
+# 处理高斯噪声图像并保存结果
+gaussian_images = [noisy_image_gaussian]
+gaussian_titles = ["Noisy Image (Gaussian)"]
+
+for kernel_size in kernel_sizes:
+    filtered_image_mean = apply_mean_filter(noisy_image_gaussian, kernel_size)
+    filtered_image_median = apply_median_filter(noisy_image_gaussian, kernel_size)
+    gaussian_images.extend([filtered_image_mean, filtered_image_median])
+    gaussian_titles.extend([f"Mean Filter {kernel_size}x{kernel_size}", f"Median Filter {kernel_size}x{kernel_size}"])
+
+save_comparison_images(gaussian_images, gaussian_titles, zoom_factor=2, region=(300, 300), output_file='./test-1/gaussian_comparison.png')
+
+# 处理椒盐噪声图像并保存结果
+salt_pepper_images = [noisy_image_salt_pepper]
+salt_pepper_titles = ["Noisy Image (Salt & Pepper)"]
+
+for kernel_size in kernel_sizes:
+    filtered_image_mean = apply_mean_filter(noisy_image_salt_pepper, kernel_size)
+    filtered_image_median = apply_median_filter(noisy_image_salt_pepper, kernel_size)
+    salt_pepper_images.extend([filtered_image_mean, filtered_image_median])
+    salt_pepper_titles.extend([f"Mean Filter {kernel_size}x{kernel_size}", f"Median Filter {kernel_size}x{kernel_size}"])
+
+save_comparison_images(salt_pepper_images, salt_pepper_titles, zoom_factor=2, region=(300, 300), output_file='./test-1/salt_pepper_comparison.png')
